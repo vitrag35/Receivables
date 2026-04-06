@@ -138,18 +138,32 @@ export default function Home() {
         return { ...payment, applied };
       });
 
-      // Update credit entry applied amounts
+      // Update credit entry applied amounts and track adjustments
+      const adjustmentsByCharge = new Map<string, number>();
       const newCreditEntries = prev.creditEntries.map((entry) => {
         const entryApplications = newApplications.filter((app) => app.paymentId === entry.id);
         const applied = entryApplications.reduce((sum, app) => sum + app.amount, 0);
+        
+        // Track adjustments by charge
+        entryApplications.forEach((app) => {
+          const currentAdjustment = adjustmentsByCharge.get(app.chargeId) || 0;
+          adjustmentsByCharge.set(app.chargeId, currentAdjustment + app.amount);
+        });
+        
         return { ...entry, applied };
       });
 
-      // Update charge paid amounts
+      // Update charge paid amounts and apply adjustments to amount
       const newCharges = prev.charges.map((charge) => {
         const chargeApplications = newApplications.filter((app) => app.chargeId === charge.id);
         const paid = chargeApplications.reduce((sum, app) => sum + app.amount, 0);
-        return { ...charge, paid };
+        const adjustment = adjustmentsByCharge.get(charge.id) || 0;
+        
+        return { 
+          ...charge, 
+          paid,
+          amount: charge.amount + adjustment
+        };
       });
 
       return {
@@ -179,18 +193,32 @@ export default function Home() {
         return { ...payment, applied };
       });
 
-      // Update credit entry applied amounts
+      // Update credit entry applied amounts and track adjustments
+      const adjustmentsByCharge = new Map<string, number>();
       const newCreditEntries = prev.creditEntries.map((entry) => {
         const entryApplications = newApplications.filter((app) => app.paymentId === entry.id);
         const applied = entryApplications.reduce((sum, app) => sum + app.amount, 0);
+        
+        // Track adjustments by charge
+        entryApplications.forEach((app) => {
+          const currentAdjustment = adjustmentsByCharge.get(app.chargeId) || 0;
+          adjustmentsByCharge.set(app.chargeId, currentAdjustment + app.amount);
+        });
+        
         return { ...entry, applied };
       });
 
-      // Update charge paid amounts
+      // Update charge paid amounts and apply adjustments to amount
       const newCharges = prev.charges.map((charge) => {
         const chargeApplications = newApplications.filter((app) => app.chargeId === charge.id);
         const paid = chargeApplications.reduce((sum, app) => sum + app.amount, 0);
-        return { ...charge, paid };
+        const adjustment = adjustmentsByCharge.get(charge.id) || 0;
+        
+        return { 
+          ...charge, 
+          paid,
+          amount: charge.amount + adjustment
+        };
       });
 
       return {
