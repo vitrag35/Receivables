@@ -119,7 +119,8 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
                     setDeletingPaymentId(selectedPaymentId);
                   }
                 }}
-                disabled={!selectedPayment || selectedPayment.amount - selectedPayment.applied !== selectedPayment.amount}
+                disabled={!selectedPayment || selectedPayment.amount - selectedPayment.applied !== selectedPayment.amount || selectedPayment.isDeposited}
+                title={selectedPayment?.isDeposited ? 'Cannot delete a deposited payment' : ''}
                 className="px-3 py-1 bg-red-50 text-red-700 rounded text-xs font-semibold hover:bg-red-100 border border-red-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
               >
                 Delete
@@ -147,6 +148,7 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
               <th className="px-4 py-3 text-right font-semibold text-xs uppercase">Amount</th>
               <th className="px-4 py-3 text-right font-semibold text-xs uppercase">Applied</th>
               <th className="px-4 py-3 text-right font-semibold text-xs uppercase">Unapplied Credit</th>
+              <th className="px-4 py-3 text-left font-semibold text-xs uppercase">Deposit ID</th>
               <th className="px-4 py-3 text-left font-semibold text-xs uppercase">Status</th>
             </tr>
           </thead>
@@ -169,6 +171,15 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
                   <td className="px-4 py-3 text-right text-gray-800 font-bold">${payment.amount.toFixed(2)}</td>
                   <td className="px-4 py-3 text-right text-gray-600">${payment.applied.toFixed(2)}</td>
                   <td className="px-4 py-3 text-right font-bold text-gray-800">${unapplied.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {payment.depositId ? (
+                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                        {customer.deposits.find((d) => d.id === payment.depositId)?.depositId || 'Unknown'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${getStatusBadgeColor(

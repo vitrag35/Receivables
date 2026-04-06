@@ -21,6 +21,8 @@ export interface Payment {
   amount: number;
   applied: number;
   notes?: string;
+  depositId?: string;
+  isDeposited?: boolean;
 }
 
 export interface Application {
@@ -33,6 +35,18 @@ export interface Application {
 }
 
 export type PaymentApplication = Application;
+
+export type DepositStatus = 'PENDING' | 'FINALIZED';
+
+export interface Deposit {
+  id: string;
+  depositId: string;
+  date: string;
+  amount: number;
+  paymentIds: string[];
+  status: DepositStatus;
+  createdDate: string;
+}
 
 export type CreditType = 'PAYMENT' | 'ADJUSTMENT' | 'REFUND';
 
@@ -68,6 +82,7 @@ export interface Customer {
   creditEntries: CreditEntry[];
   applications: Application[];
   deletedEntries: DeletedEntry[];
+  deposits: Deposit[];
 }
 
 export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
@@ -100,6 +115,7 @@ export const DB: Record<string, Customer> = {
       { id: 'a1', paymentId: 'p1', chargeId: 'i3', amount: 1500, appliedDate: '2024-03-08' },
     ],
     deletedEntries: [],
+    deposits: [],
   },
   c2: {
     id: 'c2',
@@ -117,6 +133,7 @@ export const DB: Record<string, Customer> = {
       { id: 'a2', paymentId: 'p3', chargeId: 'i5', amount: 3800, appliedDate: '2024-03-10' },
     ],
     deletedEntries: [],
+    deposits: [],
   },
   c3: {
     id: 'c3',
@@ -135,5 +152,6 @@ export const DB: Record<string, Customer> = {
       { id: 'a3', paymentId: 'p4', chargeId: 'i6', amount: 2000, appliedDate: '2024-02-25' },
     ],
     deletedEntries: [],
+    deposits: [],
   },
 };

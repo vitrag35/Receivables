@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Customer, Payment, PaymentApplication, CreditEntry, Charge } from '@/lib/ar-data';
+import { Customer, Payment, PaymentApplication, CreditEntry, Charge, Deposit } from '@/lib/ar-data';
 import ChargesTab from './tabs/charges-tab';
 import PaymentsTab from './tabs/payments-tab';
 import RefundsTab from './tabs/refunds-tab';
+import DepositsTab from './tabs/deposits-tab';
 
 interface ArPanelProps {
   customer: Customer;
@@ -15,15 +16,19 @@ interface ArPanelProps {
   onDeleteCreditEntry: (entryId: string) => void;
   onApplyPayment: (applications: PaymentApplication[]) => void;
   onUnapplyPayment: (applicationId: string) => void;
+  onCreateDeposit: (paymentIds: string[]) => void;
+  onFinalizeDeposit: (depositId: string) => void;
+  onRemoveFromDeposit: (depositId: string, paymentId: string) => void;
 }
 
-export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAddCharge, onAddCreditEntry, onDeleteCreditEntry, onApplyPayment, onUnapplyPayment }: ArPanelProps) {
-  const [activeTab, setActiveTab] = useState<'charges' | 'payments' | 'refunds'>('charges'); // v2
+export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAddCharge, onAddCreditEntry, onDeleteCreditEntry, onApplyPayment, onUnapplyPayment, onCreateDeposit, onFinalizeDeposit, onRemoveFromDeposit }: ArPanelProps) {
+  const [activeTab, setActiveTab] = useState<'charges' | 'payments' | 'refunds' | 'deposits'>('charges'); // v2
 
   const tabs = [
     { id: 'charges', label: 'Charges' },
     { id: 'payments', label: 'Payments' },
     { id: 'refunds', label: 'Refunds' },
+    { id: 'deposits', label: 'Deposits' },
   ];
 
   return (
@@ -50,6 +55,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
         {activeTab === 'charges' && <ChargesTab customer={customer} onAddCharge={onAddCharge} onAddCreditEntry={onAddCreditEntry} onUnapplyPayment={onUnapplyPayment} onApplyPayment={onApplyPayment} />}
         {activeTab === 'payments' && <PaymentsTab customer={customer} onAddPayment={onAddPayment} onDeletePayment={onDeletePayment} onApplyPayment={onApplyPayment} onUnapplyPayment={onUnapplyPayment} />}
         {activeTab === 'refunds' && <RefundsTab customer={customer} onDeleteCreditEntry={onDeleteCreditEntry} onApplyPayment={onApplyPayment} onUnapplyPayment={onUnapplyPayment} />}
+        {activeTab === 'deposits' && <DepositsTab customer={customer} onCreateDeposit={onCreateDeposit} onFinalizeDeposit={onFinalizeDeposit} onRemoveFromDeposit={onRemoveFromDeposit} />}
       </div>
     </div>
   );
