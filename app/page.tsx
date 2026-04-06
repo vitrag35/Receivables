@@ -5,6 +5,7 @@ import { DB, Payment, PaymentApplication, CreditEntry, DeletedEntry, Charge, Dep
 import Header from '@/components/ar/header';
 import CustomerBar from '@/components/ar/customer-bar';
 import ArPanel from '@/components/ar/ar-panel';
+import UniversalDepositsModal from '@/components/modals/universal-deposits-modal';
 
 interface CustomerData {
   charges: typeof DB.acme_corp.charges;
@@ -12,7 +13,6 @@ interface CustomerData {
   creditEntries: CreditEntry[];
   applications: PaymentApplication[];
   deletedEntries: DeletedEntry[];
-  deposits: Deposit[];
 }
 
 export default function Home() {
@@ -27,7 +27,6 @@ export default function Home() {
       creditEntries: [...baseCustomer.creditEntries],
       applications: [...baseCustomer.applications],
       deletedEntries: [...baseCustomer.deletedEntries],
-      deposits: [...baseCustomer.deposits],
     } : null
   );
 
@@ -40,7 +39,6 @@ export default function Home() {
       creditEntries: [...customer.creditEntries],
       applications: [...customer.applications],
       deletedEntries: [...customer.deletedEntries],
-      deposits: [...customer.deposits],
     });
   }, []);
 
@@ -179,77 +177,116 @@ export default function Home() {
     });
   }, []);
 
+  const [globalDeposits, setGlobalDeposits] = useState<Deposit[]>([]);
+  const [isDepositsModalOpen, setIsDepositsModalOpen] = useState(false);
+
   const handleCreateDeposit = useCallback((paymentIds: string[]) => {
+    // Generate unique deposit ID
+    const depositNum = globalDeposits.length + 1;
+    const depositId = `DEP-${String(depositNum).padStart(4, '0')}`;
+
+    // Calculate total amount
+    let totalAmount = 0;
+    Object.values(DB).forEach((customer) => {
+      customer.payments.forEach((p) => {
+        if (paymentIds.includes(p.id)) {
+          totalAmount += p.amount;
+        }
+      });
+    });
+
+    // Create new deposit
+    const newDeposit: Deposit = {
+      id: `dep_${Date.now()}`,
+      depositId,
+      date: new Date().toISOString().split('T')[0],
+      amount: totalAmount,
+      paymentIds,
+      status: 'PENDING',
+      createdDate: new Date().toISOString().split('T')[0],
+    };
+
+    // Mark payments as deposited across all customers
+    setGlobalDeposits([...globalDeposits, newDeposit]);
+
+    // Update current customer data if applicable
     setCustomerData((prev) => {
       if (!prev) return prev;
 
-      // Generate unique deposit ID
-      const depositNum = prev.deposits.length + 1;
-      const depositId = `DEP-${String(depositNum).padStart(4, '0')}`;
-      
-      // Calculate total amount
-      const totalAmount = prev.payments
-        .filter((p) => paymentIds.includes(p.id))
-        .reduce((sum, p) => sum + p.amount, 0);
-
-      // Create new deposit
-      const newDeposit: Deposit = {
-        id: `dep_${Date.now()}`,
-        depositId,
-        date: new Date().toISOString().split('T')[0],
-        amount: totalAmount,
-        paymentIds,
-        status: 'PENDING',
-        createdDate: new Date().toISOString().split('T')[0],
-      };
-
-      // Mark payments as deposited
       const updatedPayments = prev.payments.map((p) =>
-        paymentIds.includes(p.id) 
+        paymentIds.includes(p.id)
           ? { ...p, isDeposited: true, depositId: newDeposit.id }
           : p
       );
 
       return {
         ...prev,
-        deposits: [...prev.deposits, newDeposit],
         payments: updatedPayments,
       };
     });
-  }, []);
+
+    // Update all customer data in DB
+    Object.entries(DB).forEach(([_customerId, customer]) => {
+      customer.payments.forEach((p) => {
+        if (paymentIds.includes(p.id)) {
+          p.isDeposited = true;
+          p.depositId = newDeposit.id;
+        }
+      });
+    });
+  }, [globalDeposits]);
 
   const handleFinalizeDeposit = useCallback((depositId: string) => {
-    setCustomerData((prev) => {
-      if (!prev) return prev;
-
-      return {
-        ...prev,
-        deposits: prev.deposits.map((d) =>
-          d.id === depositId ? { ...d, status: 'FINALIZED' } : d
-        ),
-      };
-    });
+    setGlobalDeposits((prev) =>
+      prev.map((d) =>
+        d.id === depositId ? { ...d, status: 'FINALIZED' } : d
+      )
+    );
   }, []);
 
   const handleRemoveFromDeposit = useCallback((depositId: string, paymentId: string) => {
+    const deposit = globalDeposits.find((d) => d.id === depositId);
+    if (!deposit || deposit.status === 'FINALIZED') return;
+
+    const updatedPaymentIds = deposit.paymentIds.filter((id) => id !== paymentId);
+    const newAmount = (() => {
+      let total = 0;
+      Object.values(DB).forEach((customer) => {
+        customer.payments.forEach((p) => {
+          if (updatedPaymentIds.includes(p.id)) {
+            total += p.amount;
+          }
+        });
+      });
+      return total;
+    })();
+
+    setGlobalDeposits((prev) =>
+      prev.map((d) =>
+        d.id === depositId
+          ? { ...d, paymentIds: updatedPaymentIds, amount: newAmount }
+          : d
+      )
+    );
+
+    // Update payment deposit status
+    Object.entries(DB).forEach(([_customerId, customer]) => {
+      const payment = customer.payments.find((p) => p.id === paymentId);
+      if (payment) {
+        payment.isDeposited = false;
+        payment.depositId = undefined;
+      }
+    });
+
+    // Update current customer data if applicable
     setCustomerData((prev) => {
       if (!prev) return prev;
 
-      const deposit = prev.deposits.find((d) => d.id === depositId);
-      if (!deposit || deposit.status === 'FINALIZED') return prev;
-
-      const updatedPaymentIds = deposit.paymentIds.filter((id) => id !== paymentId);
-      const newAmount = prev.payments
-        .filter((p) => updatedPaymentIds.includes(p.id))
-        .reduce((sum, p) => sum + p.amount, 0);
+      const payment = prev.payments.find((p) => p.id === paymentId);
+      if (!payment) return prev;
 
       return {
         ...prev,
-        deposits: prev.deposits.map((d) =>
-          d.id === depositId
-            ? { ...d, paymentIds: updatedPaymentIds, amount: newAmount }
-            : d
-        ),
         payments: prev.payments.map((p) =>
           p.id === paymentId
             ? { ...p, isDeposited: false, depositId: undefined }
@@ -257,7 +294,7 @@ export default function Home() {
         ),
       };
     });
-  }, []);
+  }, [globalDeposits]);
 
   const handleUnapplyPayment = useCallback((applicationId: string) => {
     setCustomerData((prev) => {
@@ -321,12 +358,19 @@ export default function Home() {
     creditEntries: customerData.creditEntries,
     applications: customerData.applications,
     deletedEntries: customerData.deletedEntries,
-    deposits: customerData.deposits,
   } : null;
 
   return (
     <main className="min-h-screen bg-gray-100">
-      <Header />
+      <Header onOpenDeposits={() => setIsDepositsModalOpen(true)} />
+      <UniversalDepositsModal
+        isOpen={isDepositsModalOpen}
+        onClose={() => setIsDepositsModalOpen(false)}
+        deposits={globalDeposits}
+        onCreateDeposit={handleCreateDeposit}
+        onFinalizeDeposit={handleFinalizeDeposit}
+        onRemoveFromDeposit={handleRemoveFromDeposit}
+      />
       <CustomerBar 
         selectedCustomerId={selectedCustomerId}
         selectedCustomer={selectedCustomer}
@@ -342,9 +386,6 @@ export default function Home() {
           onDeleteCreditEntry={handleDeleteCreditEntry}
           onApplyPayment={handleApplyPayment}
           onUnapplyPayment={handleUnapplyPayment}
-          onCreateDeposit={handleCreateDeposit}
-          onFinalizeDeposit={handleFinalizeDeposit}
-          onRemoveFromDeposit={handleRemoveFromDeposit}
         />
       ) : (
         <div className="max-w-4xl mx-auto mt-24 px-6">
