@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Customer, FinanceCharge, FinanceChargeStatus, DB, DEFAULT_FINANCE_CHARGE_CONFIG } from '@/lib/ar-data';
-import { calculateFinanceChargesForAllCustomers } from '@/lib/finance-charges';
-import FinanceChargesSettingsModal from './modals/finance-charges-settings-modal';
+import { useState, useMemo } from 'react';
+import { Customer, FinanceCharge, DB } from '@/lib/ar-data';
 import FinanceChargesModal from './ar/modals/finance-charges-modal';
-import { Settings, Play, X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 
 interface FinanceChargesViewProps {
   isOpen: boolean;
@@ -13,84 +11,70 @@ interface FinanceChargesViewProps {
 }
 
 export default function FinanceChargesView({ isOpen, onClose }: FinanceChargesViewProps) {
-  const [config, setConfig] = useState(DEFAULT_FINANCE_CHARGE_CONFIG);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedFinanceChargeId, setSelectedFinanceChargeId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<FinanceChargeStatus | 'ALL'>('ALL');
-  const [financeChargeLogs, setFinanceChargeLogs] = useState<any[]>([]);
+  const [customerFilter, setCustomerFilter] = useState<string>('ALL');
+  const [customerSearch, setCustomerSearch] = useState<string>('');
+  const [useAllDates, setUseAllDates] = useState(true);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   if (!isOpen) return null;
 
   // Gather all finance charges from all customers
-  const allFinanceCharges: (FinanceCharge & { customerName: string; customerId: string })[] = [];
+  const allFinanceCharges: (FinanceCharge & { customerName: string; customerId: string; customerCode: string })[] = [];
+  const allCustomers: { id: string; name: string; code: string }[] = [];
+  
   Object.entries(DB).forEach(([customerId, customer]) => {
+    allCustomers.push({ id: customer.id, name: customer.name, code: customer.code });
     customer.financeCharges?.forEach((fc) => {
       allFinanceCharges.push({
         ...fc,
         customerName: customer.name,
         customerId: customer.id,
+        customerCode: customer.code,
       });
     });
   });
 
-  const filteredCharges =
-    statusFilter === 'ALL'
-      ? allFinanceCharges
-      : allFinanceCharges.filter((fc) => fc.status === statusFilter);
+  // Apply filters
+  const filteredCharges = useMemo(() => {
+    return allFinanceCharges.filter((fc) => {
+      // Customer filter
+      if (customerFilter !== 'ALL' && fc.customerId !== customerFilter) {
+        return false;
+      }
+
+      // Customer search
+      if (customerSearch) {
+        const searchLower = customerSearch.toLowerCase();
+        const matchesName = fc.customerName.toLowerCase().includes(searchLower);
+        const matchesCode = fc.customerCode.toLowerCase().includes(searchLower);
+        if (!matchesName && !matchesCode) {
+          return false;
+        }
+      }
+
+      // Date filter
+      if (!useAllDates) {
+        const chargeDate = fc.calculationDate;
+        if (startDate && chargeDate < startDate) return false;
+        if (endDate && chargeDate > endDate) return false;
+      }
+
+      return true;
+    });
+  }, [customerFilter, customerSearch, useAllDates, startDate, endDate, allFinanceCharges]);
 
   const selectedCharge = allFinanceCharges.find((fc) => fc.id === selectedFinanceChargeId);
   const selectedCustomer = selectedCustomerId ? (DB[selectedCustomerId as keyof typeof DB] as Customer) : null;
-
-  // Calculate totals
-  const totalCharges = allFinanceCharges.length;
-  const totalInterestCharged = allFinanceCharges.reduce((sum, fc) => sum + fc.interestAmount, 0);
-  const totalCollected = allFinanceCharges.reduce((sum, fc) => sum + fc.paid, 0);
-  const totalOutstanding = allFinanceCharges.reduce((sum, fc) => sum + (fc.interestAmount - fc.paid), 0);
-
-  const handleRunFinanceCharges = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const customers = Object.values(DB) as Customer[];
-    const { charges, log } = calculateFinanceChargesForAllCustomers(customers, config, today);
-
-    // Add new charges to customers
-    charges.forEach((charge) => {
-      const customer = DB[charge.customerId as keyof typeof DB];
-      if (customer) {
-        customer.financeCharges.push(charge);
-      }
-    });
-
-    // Add to logs
-    setFinanceChargeLogs([...financeChargeLogs, log]);
-
-    // Update config last run date
-    setConfig({ ...config, lastRunDate: today });
-
-    // Refresh UI by clearing selection
-    setSelectedFinanceChargeId(null);
-  };
-
-  const getStatusBadgeColor = (status: FinanceChargeStatus) => {
-    switch (status) {
-      case 'UNPAID':
-        return 'bg-red-50 text-red-700 border-red-200';
-      case 'PARTIAL':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'PAID':
-        return 'bg-green-50 text-green-700 border-green-200';
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-[95vw] h-[95vh] flex flex-col shadow-xl">
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Finance Charges</h1>
-            <p className="text-gray-600 mt-1 text-sm">Company-wide interest and finance charge tracking</p>
-          </div>
+          <h1 className="text-xl font-bold text-gray-900">View Finance Charges Log</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -101,79 +85,67 @@ export default function FinanceChargesView({ isOpen, onClose }: FinanceChargesVi
 
         {/* Modal Content - Scrollable */}
         <div className="overflow-y-auto flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-full mx-auto space-y-4">
+            {/* Filter Section */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="grid grid-cols-12 gap-4 items-end">
+                {/* Date Range Filters */}
+                <div className="col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Starting Date:</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    disabled={useAllDates}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                  />
+                </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <p className="text-xs text-gray-600 uppercase font-semibold">Total Charges</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{totalCharges}</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <p className="text-xs text-gray-600 uppercase font-semibold">Total Interest</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">${totalInterestCharged.toFixed(2)}</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <p className="text-xs text-green-700 uppercase font-semibold">Collected</p>
-            <p className="text-3xl font-bold text-green-700 mt-2">${totalCollected.toFixed(2)}</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <p className="text-xs text-orange-700 uppercase font-semibold">Outstanding</p>
-            <p className="text-3xl font-bold text-orange-700 mt-2">${totalOutstanding.toFixed(2)}</p>
-          </div>
-        </div>
+                <div className="col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ending Date:</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    disabled={useAllDates}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                  />
+                </div>
 
-        {/* Configuration Panel */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Configuration</h2>
-              <p className="text-sm text-gray-600 mt-1">Annual Rate: {config.annualInterestRate}% | Days Until Interest: {config.daysUntilInterestApplies} | Frequency: {config.calculationFrequency}</p>
-              {config.lastRunDate && (
-                <p className="text-sm text-gray-500 mt-2">Last Run: {config.lastRunDate}</p>
-              )}
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleRunFinanceCharges}
-                disabled={!config.isEnabled}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded font-semibold hover:bg-teal-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <Play className="w-4 h-4" />
-                Run Calculation Now
-              </button>
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded font-semibold hover:bg-gray-200 transition-colors"
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-            </div>
-          </div>
-        </div>
+                <div className="col-span-3 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="allDates"
+                    checked={useAllDates}
+                    onChange={(e) => setUseAllDates(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                  />
+                  <label htmlFor="allDates" className="text-sm font-semibold text-gray-700 cursor-pointer">
+                    All Dates
+                  </label>
+                </div>
 
-        {/* Filters */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold text-gray-700">Filter by Status:</span>
-            <div className="flex gap-2">
-              {(['ALL', 'UNPAID', 'PARTIAL', 'PAID'] as const).map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-2 rounded text-sm font-semibold transition-colors ${
-                    statusFilter === status
-                      ? 'bg-teal-700 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {status === 'ALL' ? 'All' : status} ({allFinanceCharges.filter((fc) => status === 'ALL' || fc.status === status).length})
-                </button>
-              ))}
+                {/* Customer Filter */}
+                <div className="col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Customer:</label>
+                  <select
+                    value={customerFilter}
+                    onChange={(e) => {
+                      setCustomerFilter(e.target.value);
+                      setCustomerSearch('');
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                  >
+                    <option value="ALL">All Customers</option>
+                    {allCustomers.map((cust) => (
+                      <option key={cust.id} value={cust.id}>
+                        {cust.code} - {cust.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* Main Table */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
@@ -249,44 +221,8 @@ export default function FinanceChargesView({ isOpen, onClose }: FinanceChargesVi
           </div>
         </div>
 
-            {/* Finance Charge Logs */}
-            {financeChargeLogs.length > 0 && (
-              <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Calculation History</h2>
-                <div className="space-y-3">
-                  {financeChargeLogs.map((log, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">
-                          Run Date: {log.runDate}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {log.totalChargesCreated} charges created • Total: ${log.totalInterestAmount.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-gray-900">
-                          ${log.totalInterestAmount.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Settings Modal */}
-        <FinanceChargesSettingsModal
-          isOpen={showSettingsModal}
-          onClose={() => setShowSettingsModal(false)}
-          config={config}
-          onUpdateConfig={setConfig}
-        />
 
         {/* Finance Charge Details Modal */}
         {selectedCharge && selectedCustomer && (
