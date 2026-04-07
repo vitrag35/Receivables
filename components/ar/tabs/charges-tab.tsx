@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Customer, ChargeStatus, PaymentApplication, CreditEntry, Charge } from '@/lib/ar-data';
+import { Customer, ChargeStatus, PaymentApplication, CreditEntry, Charge, Payment } from '@/lib/ar-data';
 import ApplyPaymentModal from '../modals/apply-payment-modal';
 import TransactionHistoryModal from '../modals/transaction-history-modal';
 import NewAdjustmentModal from '../modals/new-adjustment-modal';
 import ReturnedCheckModal from '../modals/returned-check-modal';
+import ReceiptModal from '../modals/receipt-modal';
 
 interface ChargesTabProps {
   customer: Customer;
@@ -21,6 +22,9 @@ export default function ChargesTab({ customer, onAddCharge, onAddCreditEntry, on
   const [showTxnHistoryModal, setShowTxnHistoryModal] = useState(false);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [showReturnedCheckModal, setShowReturnedCheckModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedReceiptItem, setSelectedReceiptItem] = useState<Payment | CreditEntry | null>(null);
+  const [selectedReceiptType, setSelectedReceiptType] = useState<'PAYMENT' | 'RETURNED_CHECK' | 'ADJUSTMENT' | null>(null);
 
   const selectedCharge = customer.charges.find((c) => c.id === selectedChargeId);
 
@@ -84,6 +88,30 @@ export default function ChargesTab({ customer, onAddCharge, onAddCreditEntry, on
         {selectedChargeId && (
           <div className="bg-blue-50 border border-blue-200 rounded px-4 py-3 mb-4 flex items-center gap-3">
             <span className="text-sm text-blue-700 font-semibold flex-1">Invoice {selectedCharge?.num} selected</span>
+            {selectedCharge && selectedCharge.num.startsWith('RC-') && (
+              <button
+                onClick={() => {
+                  if (selectedCharge) {
+                    const tempPayment: Payment = {
+                      id: selectedCharge.id,
+                      customerId: customer.id,
+                      date: selectedCharge.date,
+                      type: 'CHECK',
+                      ref: selectedCharge.ref,
+                      amount: selectedCharge.amount,
+                      applied: selectedCharge.paid,
+                      transactionType: 'RETURNED_CHECK',
+                    };
+                    setSelectedReceiptItem(tempPayment);
+                    setSelectedReceiptType('RETURNED_CHECK');
+                    setShowReceiptModal(true);
+                  }
+                }}
+                className="px-3 py-1 bg-green-50 text-green-700 rounded text-xs font-semibold hover:bg-green-100 border border-green-200"
+              >
+                Print/Email Receipt
+              </button>
+            )}
             <button
               onClick={() => setShowTxnHistoryModal(true)}
               className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs font-semibold hover:bg-gray-200"
@@ -186,6 +214,16 @@ export default function ChargesTab({ customer, onAddCharge, onAddCreditEntry, on
         onClose={() => setShowReturnedCheckModal(false)}
         onRecordReturnedCheck={onAddCharge}
       />
+
+      {selectedReceiptItem && (
+        <ReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          item={selectedReceiptItem}
+          itemType={selectedReceiptType}
+          customerName={customer.name}
+        />
+      )}
     </>
   );
 }
