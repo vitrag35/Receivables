@@ -420,12 +420,12 @@ export default function Home() {
       <Header 
         onOpenDeposits={() => setIsDepositsModalOpen(true)} 
         onOpenSearch={() => setIsSearchModalOpen(true)}
+        onOpenFinanceCharges={() => setIsFinanceChargesModalOpen(true)}
       />
       <CustomerBar
         selectedCustomerId={selectedCustomerId}
         selectedCustomer={selectedCustomer}
         onSelectCustomer={handleSelectCustomer}
-        onOpenFinanceCharges={() => setIsFinanceChargesModalOpen(true)}
       />
 
       {selectedCustomer && customerData ? (
@@ -439,7 +439,6 @@ export default function Home() {
           onDeleteCreditEntry={handleDeleteCreditEntry}
           onApplyPayment={handleApplyPayment}
           onUnapplyPayment={handleUnapplyPayment}
-          onApplyPaymentToFinanceCharge={handleApplyPaymentToFinanceCharge}
         />
       ) : (
         <div className="p-6 text-center text-gray-500">

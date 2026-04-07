@@ -5,7 +5,6 @@ import { Customer, Payment, PaymentApplication, CreditEntry, Charge } from '@/li
 import ChargesTab from './tabs/charges-tab';
 import PaymentsTab from './tabs/payments-tab';
 import RefundsTab from './tabs/refunds-tab';
-import FinanceChargesTab from './tabs/finance-charges-tab';
 import DeletedRecordsModal from '@/components/modals/deleted-records-modal';
 import { Trash2 } from 'lucide-react';
 
@@ -19,18 +18,16 @@ interface ArPanelProps {
   onDeleteCreditEntry: (entryId: string) => void;
   onApplyPayment: (applications: PaymentApplication[]) => void;
   onUnapplyPayment: (applicationId: string) => void;
-  onApplyPaymentToFinanceCharge?: (financeChargeId: string, amount: number) => void;
 }
 
-export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAddCharge, onDeleteCharge, onAddCreditEntry, onDeleteCreditEntry, onApplyPayment, onUnapplyPayment, onApplyPaymentToFinanceCharge }: ArPanelProps) {
-  const [activeTab, setActiveTab] = useState<'charges' | 'payments' | 'refunds' | 'finance-charges'>('charges'); // v2
+export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAddCharge, onDeleteCharge, onAddCreditEntry, onDeleteCreditEntry, onApplyPayment, onUnapplyPayment }: ArPanelProps) {
+  const [activeTab, setActiveTab] = useState<'charges' | 'payments' | 'refunds'>('charges'); // v2
   const [showDeletedRecordsModal, setShowDeletedRecordsModal] = useState(false);
 
   const tabs = [
     { id: 'charges', label: 'Charges' },
     { id: 'payments', label: 'Payments' },
     { id: 'refunds', label: 'Credits' },
-    { id: 'finance-charges', label: 'Finance Charges' },
   ];
 
   return (
@@ -67,7 +64,6 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
         {activeTab === 'charges' && <ChargesTab customer={customer} onAddCharge={onAddCharge} onDeleteCharge={onDeleteCharge} onAddCreditEntry={onAddCreditEntry} onUnapplyPayment={onUnapplyPayment} onApplyPayment={onApplyPayment} />}
         {activeTab === 'payments' && <PaymentsTab customer={customer} onAddPayment={onAddPayment} onDeletePayment={onDeletePayment} onApplyPayment={onApplyPayment} onUnapplyPayment={onUnapplyPayment} />}
         {activeTab === 'refunds' && <RefundsTab customer={customer} onDeleteCreditEntry={onDeleteCreditEntry} onAddCreditEntry={onAddCreditEntry} onApplyPayment={onApplyPayment} onUnapplyPayment={onUnapplyPayment} />}
-        {activeTab === 'finance-charges' && <FinanceChargesTab customer={customer} onApplyPaymentToFinanceCharge={onApplyPaymentToFinanceCharge} />}
       </div>
 
       {/* Deleted Records Modal */}

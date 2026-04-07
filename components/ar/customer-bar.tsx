@@ -2,20 +2,17 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Customer, DB } from '@/lib/ar-data';
-import { PieChart } from 'lucide-react';
 
 interface CustomerBarProps {
   selectedCustomerId: string;
   selectedCustomer: Customer | null;
   onSelectCustomer: (customerId: string) => void;
-  onOpenFinanceCharges?: () => void;
 }
 
 export default function CustomerBar({
   selectedCustomerId,
   selectedCustomer,
   onSelectCustomer,
-  onOpenFinanceCharges,
 }: CustomerBarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -94,21 +91,10 @@ export default function CustomerBar({
       </div>
 
       {selectedCustomer && (
-        <div className="ml-auto flex items-center gap-4">
-          {onOpenFinanceCharges && (
-            <button
-              onClick={onOpenFinanceCharges}
-              className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded font-semibold transition flex items-center gap-2"
-            >
-              <PieChart className="w-4 h-4" />
-              Finance Charges
-            </button>
-          )}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex flex-col items-end">
-            <div className="text-xs uppercase font-semibold text-gray-600">Balance Due</div>
-            <div className={`text-2xl font-bold ${totalDue > 0 ? 'text-red-700' : 'text-green-600'}`}>
-              ${totalDue.toFixed(2)}
-            </div>
+        <div className="ml-auto bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex flex-col items-end">
+          <div className="text-xs uppercase font-semibold text-gray-600">Balance Due</div>
+          <div className={`text-2xl font-bold ${totalDue > 0 ? 'text-red-700' : 'text-green-600'}`}>
+            ${totalDue.toFixed(2)}
           </div>
         </div>
       )}
