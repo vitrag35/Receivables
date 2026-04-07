@@ -24,9 +24,13 @@ export default function RefundsTab({
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [deletingRefundId, setDeletingRefundId] = useState<string | null>(null);
+  const [showUnappliedOnly, setShowUnappliedOnly] = useState(false);
 
   // Get negative adjustments (credit memo)
   const refunds = customer.creditEntries.filter((entry) => entry.type === 'REFUND');
+  const displayedRefunds = showUnappliedOnly
+    ? refunds.filter((r) => r.amount - r.applied > 0)
+    : refunds;
   const selectedRefund = refunds.find((r) => r.id === selectedRefundId);
 
   const getRefundStatusColor = (applied: number, total: number) => {
@@ -67,6 +71,19 @@ export default function RefundsTab({
         <div>
           <h3 className="text-lg font-medium text-gray-700">Refunds / Credits</h3>
           <p className="text-xs text-gray-500 mt-1">Click a row to select a refund or credit.</p>
+        </div>
+
+        {/* Filter toggle */}
+        <div className="flex items-center gap-2 mb-4 mt-4">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showUnappliedOnly}
+              onChange={(e) => setShowUnappliedOnly(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+            />
+            Show unapplied only
+          </label>
         </div>
 
         {selectedRefundId && (
@@ -138,9 +155,11 @@ export default function RefundsTab({
       </div>
 
       {/* Table */}
-      {refunds.length === 0 ? (
+      {displayedRefunds.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded p-6 text-center">
-          <p className="text-gray-500 text-sm">No refunds or credit memos yet.</p>
+          <p className="text-gray-500 text-sm">
+            {showUnappliedOnly ? 'No unapplied refunds or credit memos.' : 'No refunds or credit memos yet.'}
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -157,7 +176,7 @@ export default function RefundsTab({
               </tr>
             </thead>
             <tbody>
-              {refunds.map((refund) => {
+              {displayedRefunds.map((refund) => {
                 const status =
                   refund.applied === 0
                     ? 'UNAPPLIED'

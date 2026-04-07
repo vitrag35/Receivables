@@ -216,7 +216,7 @@ export default function UniversalSearchModal({
                           Date: {formatDate(result.date)}
                         </span>
                         <span className="w-[130px]">
-                          Invoice: {result.invoice || 'N/A'}
+                          Doc#: {result.invoice || 'N/A'}
                         </span>
                         <span className="flex-1 truncate">
                           Ref: {result.reference || ''}
@@ -242,7 +242,7 @@ export default function UniversalSearchModal({
                 className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 max-w-[200px]"
               >
                 <option value="amount">Amount</option>
-                <option value="invoice">Invoice Number</option>
+                <option value="invoice">Document Number</option>
                 <option value="reference">Reference</option>
                 <option value="customer">Customer Name</option>
               </select>
@@ -274,7 +274,7 @@ export default function UniversalSearchModal({
                   searchField === 'amount' 
                     ? 'Enter amount (e.g., 100)' 
                     : searchField === 'invoice'
-                    ? 'Enter invoice number'
+                    ? 'Enter document number'
                     : searchField === 'reference'
                     ? 'Enter reference'
                     : 'Enter customer name'

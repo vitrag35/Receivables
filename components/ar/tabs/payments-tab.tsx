@@ -22,8 +22,14 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showUnappliedOnly, setShowUnappliedOnly] = useState(false);
 
   const selectedPayment = customer.payments.find((p) => p.id === selectedPaymentId);
+  
+  // Filter payments based on unapplied toggle
+  const displayedPayments = showUnappliedOnly
+    ? customer.payments.filter((p) => p.amount - p.applied > 0)
+    : customer.payments;
 
   const getPaymentStatus = (payment: typeof customer.payments[0]): PaymentStatus => {
     if (payment.applied === 0) return 'UNAPPLIED';
@@ -66,6 +72,19 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
           >
             + New Payment
           </button>
+        </div>
+
+        {/* Filter toggle */}
+        <div className="flex items-center gap-2 mb-4">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showUnappliedOnly}
+              onChange={(e) => setShowUnappliedOnly(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+            />
+            Show unapplied only
+          </label>
         </div>
 
         {selectedPaymentId && (
@@ -161,7 +180,7 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
             </tr>
           </thead>
           <tbody>
-            {customer.payments.map((payment) => {
+            {displayedPayments.map((payment) => {
               const status = getPaymentStatus(payment);
               const unapplied = payment.amount - payment.applied;
               return (

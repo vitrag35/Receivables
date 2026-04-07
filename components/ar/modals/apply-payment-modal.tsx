@@ -33,7 +33,7 @@ export default function ApplyPaymentModal({ customer, isOpen, onClose, onApplyPa
       delete newCharges[chargeId];
       setSelectedCharges(newCharges);
     } else {
-      const charge = customer.charges.find((c) => c.id === chargeId);
+      const charge = allCharges.find((c) => c.id === chargeId);
       if (charge) {
         const balanceDue = charge.amount - charge.paid;
         setSelectedCharges({
@@ -58,9 +58,8 @@ export default function ApplyPaymentModal({ customer, isOpen, onClose, onApplyPa
     const newCharges: Record<string, number> = {};
     let remaining = availableCredit;
 
-    const sortedCharges = [...customer.charges].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    for (const charge of sortedCharges) {
+    // allCharges is already sorted by date
+    for (const charge of allCharges) {
       if (remaining <= 0) break;
       const balanceDue = charge.amount - charge.paid;
       const applyAmount = Math.min(balanceDue, remaining);
@@ -101,7 +100,44 @@ export default function ApplyPaymentModal({ customer, isOpen, onClose, onApplyPa
   if (!isOpen) return null;
 
   const unappliedPayments = customer.payments.filter((p) => p.applied < p.amount);
-  const unappliedCredits = customer.creditEntries.filter((c) => c.applied < c.amount);
+  const unappliedCredits = customer.creditEntries.filter((c) => c.applied < c.amount && c.type === 'REFUND');
+  
+  // Get positive adjustments as charges (they increase what customer owes)
+  const positiveAdjustments = customer.creditEntries.filter((c) => c.type === 'ADJUSTMENT' && !c.isDeleted);
+  
+  // Combined charges list including positive adjustments
+  type ChargeItem = {
+    id: string;
+    num: string;
+    date: string;
+    amount: number;
+    paid: number;
+    type: 'I' | 'A' | 'R';
+  };
+  
+  const allCharges: ChargeItem[] = [
+    ...customer.charges.map((c) => ({
+      id: c.id,
+      num: c.num,
+      date: c.date,
+      amount: c.amount,
+      paid: c.paid,
+      type: (c.num.startsWith('RC-') ? 'R' : 'I') as 'I' | 'R',
+    })),
+    ...positiveAdjustments.map((adj) => {
+      const appliedAmount = customer.applications
+        .filter((app) => app.chargeId === adj.id)
+        .reduce((sum, app) => sum + app.amount, 0);
+      return {
+        id: adj.id,
+        num: adj.ref || `ADJ-${adj.id}`,
+        date: adj.date,
+        amount: adj.amount,
+        paid: appliedAmount,
+        type: 'A' as const,
+      };
+    }),
+  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
@@ -195,18 +231,20 @@ export default function ApplyPaymentModal({ customer, isOpen, onClose, onApplyPa
                             <th className="px-3 py-2 text-left w-8">
                               <input type="checkbox" disabled />
                             </th>
-                            <th className="px-3 py-2 text-left font-semibold text-xs">Invoice #</th>
+                            <th className="px-3 py-2 text-left font-semibold text-xs">Type</th>
+                            <th className="px-3 py-2 text-left font-semibold text-xs">Document #</th>
                             <th className="px-3 py-2 text-left font-semibold text-xs">Date</th>
-                            <th className="px-3 py-2 text-right font-semibold text-xs">Invoice Amount</th>
+                            <th className="px-3 py-2 text-right font-semibold text-xs">Amount</th>
                             <th className="px-3 py-2 text-right font-semibold text-xs">Already Paid</th>
                             <th className="px-3 py-2 text-right font-semibold text-xs">Balance Due</th>
                             <th className="px-3 py-2 text-right font-semibold text-xs">Apply Amount</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {customer.charges.map((charge) => {
+                          {allCharges.map((charge) => {
                             const balanceDue = charge.amount - charge.paid;
                             const isSelected = !!selectedCharges[charge.id];
+                            const typeBadgeColor = charge.type === 'I' ? 'bg-gray-100 text-gray-700' : charge.type === 'A' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700';
                             return (
                               <tr key={charge.id} className={`border-b border-gray-100 ${isSelected ? 'bg-blue-50' : ''}`}>
                                 <td className="px-3 py-2">
@@ -216,6 +254,11 @@ export default function ApplyPaymentModal({ customer, isOpen, onClose, onApplyPa
                                     onChange={() => handleChargeToggle(charge.id)}
                                     className="w-4 h-4 cursor-pointer"
                                   />
+                                </td>
+                                <td className="px-3 py-2">
+                                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${typeBadgeColor}`}>
+                                    {charge.type}
+                                  </span>
                                 </td>
                                 <td className="px-3 py-2 font-semibold text-gray-800">{charge.num}</td>
                                 <td className="px-3 py-2 text-gray-600">{charge.date}</td>
@@ -270,21 +313,28 @@ export default function ApplyPaymentModal({ customer, isOpen, onClose, onApplyPa
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="px-3 py-2 text-left font-semibold">Invoice #</th>
+                      <th className="px-3 py-2 text-left font-semibold">Type</th>
+                      <th className="px-3 py-2 text-left font-semibold">Document #</th>
                       <th className="px-3 py-2 text-right font-semibold">Current Balance</th>
                       <th className="px-3 py-2 text-right font-semibold">Applying</th>
                       <th className="px-3 py-2 text-right font-semibold">Balance After</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {customer.charges
+                    {allCharges
                       .filter((c) => selectedCharges[c.id])
                       .map((charge) => {
                         const currentBalance = charge.amount - charge.paid;
                         const applyAmount = selectedCharges[charge.id];
                         const balanceAfter = currentBalance - applyAmount;
+                        const typeBadgeColor = charge.type === 'I' ? 'bg-gray-100 text-gray-700' : charge.type === 'A' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700';
                         return (
                           <tr key={charge.id} className="border-b border-gray-100">
+                            <td className="px-3 py-2">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${typeBadgeColor}`}>
+                                {charge.type}
+                              </span>
+                            </td>
                             <td className="px-3 py-2 font-semibold">{charge.num}</td>
                             <td className="px-3 py-2 text-right">${currentBalance.toFixed(2)}</td>
                             <td className="px-3 py-2 text-right text-orange-600 font-semibold">${applyAmount.toFixed(2)}</td>
