@@ -19,8 +19,6 @@ export default function FinanceChargesView({ isOpen, onClose }: FinanceChargesVi
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  if (!isOpen) return null;
-
   // Gather all finance charges from all customers
   const allFinanceCharges: (FinanceCharge & { customerName: string; customerId: string; customerCode: string })[] = [];
   const allCustomers: { id: string; name: string; code: string }[] = [];
@@ -68,6 +66,8 @@ export default function FinanceChargesView({ isOpen, onClose }: FinanceChargesVi
 
   const selectedCharge = allFinanceCharges.find((fc) => fc.id === selectedFinanceChargeId);
   const selectedCustomer = selectedCustomerId ? (DB[selectedCustomerId as keyof typeof DB] as Customer) : null;
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
