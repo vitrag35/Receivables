@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { USERS } from '@/lib/ar-data';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { USERS, DB } from '@/lib/ar-data';
 
 interface Transaction {
   id: string;
@@ -37,6 +37,9 @@ export default function CreateNewDepositView({
   const [filterUser, setFilterUser] = useState<string>('ALL');
   const [depositDate, setDepositDate] = useState(new Date().toISOString().split('T')[0]);
   const [reference, setReference] = useState('');
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
 
   // Get unique values for filters
   const uniqueSubTypes = useMemo(() => {
@@ -50,6 +53,42 @@ export default function CreateNewDepositView({
     allTransactions.forEach((t) => customers.add(t.customerName));
     return Array.from(customers).sort();
   }, [allTransactions]);
+
+  // Get filtered customers for dropdown
+  const filteredCustomersForDropdown = useMemo(() => {
+    if (!customerSearchQuery) return uniqueCustomers;
+
+    const query = customerSearchQuery.toLowerCase();
+    return uniqueCustomers.filter((customerName) => {
+      const customer = Object.values(DB).find((c) => c.name === customerName);
+      return (
+        customerName.toLowerCase().includes(query) ||
+        (customer && customer.code.toLowerCase().includes(query))
+      );
+    });
+  }, [customerSearchQuery, uniqueCustomers]);
+
+  const getDisplayCustomerName = () => {
+    return filterCustomer === 'ALL' ? 'All Customers' : filterCustomer;
+  };
+
+  const handleSelectCustomerFilter = (customerName: string) => {
+    setFilterCustomer(customerName);
+    setCustomerSearchQuery('');
+    setIsCustomerDropdownOpen(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filter transactions
   const filteredTransactions = useMemo(() => {
@@ -174,22 +213,51 @@ export default function CreateNewDepositView({
             </select>
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
               Customer
             </label>
-            <select
-              value={filterCustomer}
-              onChange={(e) => setFilterCustomer(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-700"
-            >
-              <option value="ALL">All Customers</option>
-              {uniqueCustomers.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            <div ref={customerDropdownRef} className="relative">
+              <input
+                type="text"
+                placeholder="All Customers"
+                value={isCustomerDropdownOpen ? customerSearchQuery : getDisplayCustomerName()}
+                onChange={(e) => {
+                  setCustomerSearchQuery(e.target.value);
+                  setIsCustomerDropdownOpen(true);
+                }}
+                onFocus={() => setIsCustomerDropdownOpen(true)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-700"
+              />
+              
+              {isCustomerDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                  <div
+                    onClick={() => handleSelectCustomerFilter('ALL')}
+                    className="px-3 py-2 hover:bg-teal-50 cursor-pointer text-sm border-b border-gray-100"
+                  >
+                    <div className="font-semibold text-gray-800">All Customers</div>
+                  </div>
+                  {filteredCustomersForDropdown.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">No customers found</div>
+                  ) : (
+                    filteredCustomersForDropdown.map((customerName) => {
+                      const customer = Object.values(DB).find((c) => c.name === customerName);
+                      return (
+                        <div
+                          key={customerName}
+                          onClick={() => handleSelectCustomerFilter(customerName)}
+                          className="px-3 py-2 hover:bg-teal-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-semibold text-gray-800">{customerName}</div>
+                          {customer && <div className="text-xs text-gray-500">ID: {customer.code}</div>}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
