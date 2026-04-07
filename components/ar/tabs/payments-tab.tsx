@@ -5,6 +5,7 @@ import { Customer, PAYMENT_TYPE_LABELS, PaymentStatus, Payment, PaymentApplicati
 import NewPaymentModal from '../modals/new-payment-modal';
 import DirectApplyModal from '../modals/direct-apply-modal';
 import PaymentTransactionHistoryModal from '../modals/payment-transaction-history-modal';
+import ReceiptModal from '../modals/receipt-modal';
 
 interface PaymentsTabProps {
   customer: Customer;
@@ -20,6 +21,7 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   const selectedPayment = customer.payments.find((p) => p.id === selectedPaymentId);
 
@@ -69,6 +71,12 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
         {selectedPaymentId && (
           <div className="bg-blue-50 border border-blue-200 rounded px-4 py-3 mb-4 flex items-center gap-3">
             <span className="text-sm text-blue-700 font-semibold flex-1">Payment {selectedPayment?.ref} selected</span>
+            <button
+              onClick={() => setShowReceiptModal(true)}
+              className="px-3 py-1 bg-green-50 text-green-700 rounded text-xs font-semibold hover:bg-green-100 border border-green-200"
+            >
+              Print/Email Receipt
+            </button>
             {selectedPayment?.applied > 0 && (
               <button
                 onClick={() => setShowHistoryModal(true)}
@@ -220,6 +228,16 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
           isOpen={showHistoryModal}
           onClose={() => setShowHistoryModal(false)}
           onUnapplyPayment={onUnapplyPayment}
+        />
+      )}
+
+      {selectedPayment && (
+        <ReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          item={selectedPayment}
+          itemType={selectedPayment.transactionType === 'RETURNED_CHECK' ? 'RETURNED_CHECK' : 'PAYMENT'}
+          customerName={customer.name}
         />
       )}
     </>
