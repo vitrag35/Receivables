@@ -5,7 +5,6 @@ import { Customer, PAYMENT_TYPE_LABELS, PaymentStatus, Payment, PaymentApplicati
 import NewPaymentModal from '../modals/new-payment-modal';
 import DirectApplyModal from '../modals/direct-apply-modal';
 import PaymentTransactionHistoryModal from '../modals/payment-transaction-history-modal';
-import ReceiptModal from '../modals/receipt-modal';
 
 interface PaymentsTabProps {
   customer: Customer;
@@ -21,7 +20,6 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   const selectedPayment = customer.payments.find((p) => p.id === selectedPaymentId);
 
@@ -93,14 +91,6 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
                 className="px-3 py-1 bg-red-50 text-red-700 rounded text-xs font-semibold hover:bg-red-100 border border-red-200"
               >
                 Unapply All
-              </button>
-            )}
-            {selectedPayment && (
-              <button
-                onClick={() => setShowReceiptModal(true)}
-                className="px-3 py-1 bg-green-50 text-green-700 rounded text-xs font-semibold hover:bg-green-100 border border-green-200"
-              >
-                Print/Email Receipt
               </button>
             )}
             {deletingPaymentId === selectedPaymentId ? (
@@ -230,16 +220,6 @@ export default function PaymentsTab({ customer, onAddPayment, onDeletePayment, o
           isOpen={showHistoryModal}
           onClose={() => setShowHistoryModal(false)}
           onUnapplyPayment={onUnapplyPayment}
-        />
-      )}
-
-      {selectedPayment && (
-        <ReceiptModal
-          isOpen={showReceiptModal}
-          onClose={() => setShowReceiptModal(false)}
-          item={selectedPayment}
-          itemType={selectedPayment.transactionType}
-          customerName={customer.name}
         />
       )}
     </>
