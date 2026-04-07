@@ -6,6 +6,7 @@ import Header from '@/components/ar/header';
 import CustomerBar from '@/components/ar/customer-bar';
 import ArPanel from '@/components/ar/ar-panel';
 import UniversalDepositsModal from '@/components/modals/universal-deposits-modal';
+import UniversalSearchModal from '@/components/modals/universal-search-modal';
 
 interface CustomerData {
   charges: typeof DB.acme_corp.charges;
@@ -179,6 +180,7 @@ export default function Home() {
 
   const [globalDeposits, setGlobalDeposits] = useState<Deposit[]>([]);
   const [isDepositsModalOpen, setIsDepositsModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const handleCreateDeposit = useCallback((paymentIds: string[], adjustmentIds: string[], depositDate: string, reference: string) => {
     // Generate unique deposit ID
@@ -326,7 +328,15 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-100">
-      <Header onOpenDeposits={() => setIsDepositsModalOpen(true)} />
+      <Header 
+        onOpenDeposits={() => setIsDepositsModalOpen(true)} 
+        onOpenSearch={() => setIsSearchModalOpen(true)}
+      />
+      <UniversalSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSelectCustomer={handleSelectCustomer}
+      />
       <UniversalDepositsModal
         isOpen={isDepositsModalOpen}
         onClose={() => setIsDepositsModalOpen(false)}
