@@ -9,15 +9,15 @@ interface ManageDepositsViewProps {
 }
 
 export default function ManageDepositsView({
-  deposits,
+  deposits = [],
   onDeleteDeposit,
 }: ManageDepositsViewProps) {
   const [viewMode, setViewMode] = useState<'active' | 'deleted'>('active');
   const [transactionSourceFilter, setTransactionSourceFilter] = useState<'ALL' | 'AR' | 'POS'>('ALL');
 
   // Filter active and deleted deposits
-  let activeDeposits = deposits.filter((d) => !d.isDeleted);
-  let deletedDeposits = deposits.filter((d) => d.isDeleted);
+  let activeDeposits = (deposits || []).filter((d) => !d.isDeleted);
+  let deletedDeposits = (deposits || []).filter((d) => d.isDeleted);
 
   // Apply transaction source filter
   if (transactionSourceFilter !== 'ALL') {
