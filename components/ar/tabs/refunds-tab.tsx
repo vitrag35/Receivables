@@ -175,6 +175,7 @@ export default function RefundsTab({
                 <th className="px-4 py-3 text-right font-semibold text-xs uppercase">Available</th>
                 <th className="px-4 py-3 text-center font-semibold text-xs uppercase">Deposited</th>
                 <th className="px-4 py-3 text-left font-semibold text-xs uppercase">Deposit Date</th>
+                <th className="px-4 py-3 text-center font-semibold text-xs uppercase">POS</th>
                 <th className="px-4 py-3 text-left font-semibold text-xs uppercase">Status</th>
               </tr>
             </thead>
@@ -219,6 +220,13 @@ export default function RefundsTab({
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{deposit?.depositDate || '-'}</td>
+                    <td className="px-4 py-3 text-center">
+                      {refund.isPOS ? (
+                        <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">Yes</span>
+                      ) : (
+                        <span className="inline-block px-2 py-1 bg-gray-100 text-gray-500 rounded text-xs font-bold">No</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block px-3 py-1 text-xs font-semibold rounded border ${getRefundStatusColor(

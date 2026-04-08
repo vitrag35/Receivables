@@ -12,6 +12,7 @@ export interface Charge {
   due: string;
   amount: number;
   paid: number;
+  isPOS?: boolean; // true if from POS system
 }
 
 export interface FinanceChargeConfig {
@@ -71,6 +72,7 @@ export interface Payment {
   isDeposited?: boolean;
   user?: string;
   transactionType: 'PAYMENT' | 'RETURNED_CHECK';
+  isPOS?: boolean; // true if from POS system
 }
 
 export interface Application {
@@ -103,6 +105,7 @@ export interface Deposit {
   createdDate: string;
   isDeleted?: boolean;
   deletedDate?: string;
+  transactionSource?: 'AR' | 'POS'; // posted A/R or posted POS
 }
 
 export type CreditType = 'PAYMENT' | 'ADJUSTMENT' | 'REFUND';
@@ -110,18 +113,14 @@ export type CreditType = 'PAYMENT' | 'ADJUSTMENT' | 'REFUND';
 export interface CreditEntry {
   id: string;
   customerId: string;
-  type: CreditType;
+  type: 'ADJUSTMENT' | 'RETURN' | 'DISCOUNT';
   date: string;
-  reason?: string;
+  reason: string;
   amount: number;
   applied: number;
-  ref?: string;
-  isDeleted?: boolean;
-  deletedDate?: string;
-  notes?: string;
+  ref: string;
   user?: string;
-  depositId?: string;
-  isDeposited?: boolean;
+  isPOS?: boolean; // true if from POS system
 }
 
 export type DeletedEntryType = 'PAYMENT' | 'ADJUSTMENT' | 'REFUND' | 'RETURNED_CHECK';

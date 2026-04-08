@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Customer, FinanceCharge } from '@/lib/ar-data';
+import { useState, useEffect } from 'react';
+import { Customer, FinanceCharge, DB } from '@/lib/ar-data';
 import ProcessFinanceChargesModal from './process-finance-charges-modal';
 import OverrideFinanceChargesModal from './override-finance-charges-modal';
 import { X } from 'lucide-react';
@@ -23,6 +23,17 @@ export default function CustomerFinanceChargesModal({
 }: CustomerFinanceChargesModalProps) {
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [currentCustomer, setCurrentCustomer] = useState(customer);
+
+  // Update current customer when modal opens or parent customer changes
+  useEffect(() => {
+    if (isOpen) {
+      const updatedCustomer = DB[customer.id as keyof typeof DB];
+      if (updatedCustomer) {
+        setCurrentCustomer(updatedCustomer);
+      }
+    }
+  }, [isOpen, customer.id]);
 
   if (!isOpen) return null;
 
@@ -44,16 +55,16 @@ export default function CustomerFinanceChargesModal({
           {/* Content */}
           <div className="p-6 space-y-4">
             <p className="text-sm text-gray-600">
-              Customer: <span className="font-semibold text-gray-900">{customer.name}</span>
+              Customer: <span className="font-semibold text-gray-900">{currentCustomer.name}</span>
             </p>
 
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
               <p className="text-xs text-gray-600">
-                Finance Charges: <span className="font-bold text-gray-900">{customer.financeCharges?.length || 0}</span>
+                Finance Charges: <span className="font-bold text-gray-900">{currentCustomer.financeCharges?.length || 0}</span>
               </p>
-              {customer.financeCharges && customer.financeCharges.length > 0 && (
+              {currentCustomer.financeCharges && currentCustomer.financeCharges.length > 0 && (
                 <p className="text-xs text-gray-600">
-                  Total Charged: <span className="font-bold text-gray-900">${customer.financeCharges.reduce((sum, fc) => sum + fc.interestAmount, 0).toFixed(2)}</span>
+                  Total Charged: <span className="font-bold text-gray-900">${currentCustomer.financeCharges.reduce((sum, fc) => sum + fc.interestAmount, 0).toFixed(2)}</span>
                 </p>
               )}
             </div>
@@ -87,9 +98,12 @@ export default function CustomerFinanceChargesModal({
       <ProcessFinanceChargesModal
         isOpen={showProcessModal}
         onClose={() => setShowProcessModal(false)}
-        customer={customer}
+        customer={currentCustomer}
         onProcess={() => {
           onProcessFinanceCharges();
+          // Refresh customer data after processing
+          const updated = DB[customer.id as keyof typeof DB];
+          if (updated) setCurrentCustomer(updated);
           setShowProcessModal(false);
         }}
       />
@@ -97,9 +111,12 @@ export default function CustomerFinanceChargesModal({
       <OverrideFinanceChargesModal
         isOpen={showOverrideModal}
         onClose={() => setShowOverrideModal(false)}
-        customer={customer}
+        customer={currentCustomer}
         onSave={(amount) => {
           onOverrideFinanceCharges(amount);
+          // Refresh customer data after override
+          const updated = DB[customer.id as keyof typeof DB];
+          if (updated) setCurrentCustomer(updated);
           setShowOverrideModal(false);
         }}
       />

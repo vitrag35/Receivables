@@ -29,6 +29,7 @@ type ChargeItem = {
   originalType: 'CHARGE' | 'ADJUSTMENT' | 'RETURNED_CHECK';
   isDeposited: boolean;
   depositDate: string | null;
+  isPOS?: boolean; // true if from POS system
 };
 
 export default function ChargesTab({ customer, onAddCharge, onDeleteCharge, onAddCreditEntry, onUnapplyPayment, onApplyPayment }: ChargesTabProps) {
@@ -79,6 +80,7 @@ export default function ChargesTab({ customer, onAddCharge, onDeleteCharge, onAd
         originalType: isReturnedCheck ? 'RETURNED_CHECK' : 'CHARGE',
         isDeposited: depositInfo.isDeposited,
         depositDate: depositInfo.depositDate,
+        isPOS: charge.isPOS,
       });
     });
 
@@ -103,6 +105,7 @@ export default function ChargesTab({ customer, onAddCharge, onDeleteCharge, onAd
           originalType: 'ADJUSTMENT',
           isDeposited: depositInfo.isDeposited,
           depositDate: depositInfo.depositDate,
+          isPOS: adj.isPOS,
         });
       });
 
@@ -318,6 +321,7 @@ export default function ChargesTab({ customer, onAddCharge, onDeleteCharge, onAd
               <th className="px-4 py-3 text-right font-semibold text-xs uppercase">Balance Due</th>
               <th className="px-4 py-3 text-center font-semibold text-xs uppercase">Deposited</th>
               <th className="px-4 py-3 text-left font-semibold text-xs uppercase">Deposit Date</th>
+              <th className="px-4 py-3 text-center font-semibold text-xs uppercase">POS</th>
               <th className="px-4 py-3 text-left font-semibold text-xs uppercase">Status</th>
             </tr>
           </thead>
@@ -356,6 +360,13 @@ export default function ChargesTab({ customer, onAddCharge, onDeleteCharge, onAd
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{charge.depositDate || '-'}</td>
+                  <td className="px-4 py-3 text-center">
+                    {charge.isPOS ? (
+                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">Yes</span>
+                    ) : (
+                      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-500 rounded text-xs font-bold">No</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${getStatusBadgeColor(
