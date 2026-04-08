@@ -67,6 +67,19 @@ export default function FinanceChargesView({ isOpen, onClose }: FinanceChargesVi
   const selectedCharge = allFinanceCharges.find((fc) => fc.id === selectedFinanceChargeId);
   const selectedCustomer = selectedCustomerId ? (DB[selectedCustomerId as keyof typeof DB] as Customer) : null;
 
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'UNPAID':
+        return 'bg-red-50 text-red-700 border-red-200';
+      case 'PARTIAL':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'PAID':
+        return 'bg-green-50 text-green-700 border-green-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
