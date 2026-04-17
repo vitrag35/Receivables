@@ -8,6 +8,31 @@ import RefundsTab from './tabs/refunds-tab';
 import DeletedRecordsModal from '@/components/modals/deleted-records-modal';
 import { Trash2 } from 'lucide-react';
 
+const scrollbarStyles = `
+  .table-scroll-container {
+    overflow-y: auto;
+    height: 420px;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 10px;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+`;
+
 interface ArPanelProps {
   customer: Customer;
   onAddPayment: (payment: Payment) => void;
@@ -24,8 +49,10 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
   const [showDeletedRecordsModal, setShowDeletedRecordsModal] = useState(false);
 
   return (
-    <div className="mt-8 px-6 pb-8">
-      {/* Header Section */}
+    <>
+      <style>{scrollbarStyles}</style>
+      <div className="mt-8 px-6 pb-8">
+        {/* Header Section */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Customer Transactions</h2>
@@ -56,14 +83,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
               </span>
             </div>
           </div>
-          <div 
-            className="overflow-y-auto flex-1" 
-            style={{ 
-              height: '420px',
-              scrollbarWidth: 'thin',
-              scrollbarColor: '#d1d5db #f3f4f6'
-            }}
-          >
+          <div className="table-scroll-container">
             <ChargesTab 
               customer={customer} 
               onAddCharge={onAddCharge} 
@@ -72,7 +92,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
               onUnapplyPayment={onUnapplyPayment} 
               onApplyPayment={onApplyPayment} 
             />
-          </div>
+            </div>
         </div>
 
         {/* Payments Section */}
@@ -85,14 +105,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
               </span>
             </div>
           </div>
-          <div 
-            className="overflow-y-auto flex-1"
-            style={{ 
-              height: '420px',
-              scrollbarWidth: 'thin',
-              scrollbarColor: '#d1d5db #f3f4f6'
-            }}
-          >
+          <div className="table-scroll-container">
             <PaymentsTab 
               customer={customer} 
               onAddPayment={onAddPayment} 
@@ -100,7 +113,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
               onApplyPayment={onApplyPayment} 
               onUnapplyPayment={onUnapplyPayment} 
             />
-          </div>
+            </div>
         </div>
 
         {/* Credits Section */}
@@ -113,14 +126,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
               </span>
             </div>
           </div>
-          <div 
-            className="overflow-y-auto flex-1"
-            style={{ 
-              height: '420px',
-              scrollbarWidth: 'thin',
-              scrollbarColor: '#d1d5db #f3f4f6'
-            }}
-          >
+          <div className="table-scroll-container">
             <RefundsTab 
               customer={customer} 
               onDeleteCreditEntry={onDeleteCreditEntry} 
@@ -128,7 +134,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
               onApplyPayment={onApplyPayment} 
               onUnapplyPayment={onUnapplyPayment} 
             />
-          </div>
+            </div>
         </div>
       </div>
 
@@ -139,6 +145,7 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
         deletedEntries={customer.deletedEntries}
         customerName={customer.name}
       />
-    </div>
+      </div>
+    </>
   );
 }
