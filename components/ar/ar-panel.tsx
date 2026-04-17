@@ -24,71 +24,95 @@ export default function ArPanel({ customer, onAddPayment, onDeletePayment, onAdd
   const [showDeletedRecordsModal, setShowDeletedRecordsModal] = useState(false);
 
   return (
-    <div className="mt-6 px-6">
-      {/* Header with Deleted Records Button */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">Customer Transactions</h2>
+    <div className="mt-8 px-6 pb-8">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Customer Transactions</h2>
+          <p className="text-sm text-gray-600 mt-1">Complete view of all charges, payments, and credits</p>
+        </div>
         <button
           onClick={() => setShowDeletedRecordsModal(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
           title="View Deleted Records"
         >
           <Trash2 className="w-4 h-4" />
-          <span>Deleted Records ({customer.deletedEntries.length})</span>
+          <span>Deleted Records</span>
+          <span className="ml-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded">
+            {customer.deletedEntries.length}
+          </span>
         </button>
       </div>
 
-      {/* Vertical Stacked Layout */}
-      <div className="space-y-4">
+      {/* Vertical Stacked Layout with Fixed Height Tables */}
+      <div className="space-y-6">
         {/* Charges Section */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-5 py-3 border-b border-blue-200">
-            <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wide">Charges</h3>
-            <p className="text-xs text-blue-700 mt-1">{customer.charges.length} invoices</p>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 border-b border-blue-800">
+            <div className="flex items-baseline justify-between">
+              <h3 className="text-base font-bold text-white uppercase tracking-wide">Charges</h3>
+              <span className="text-sm font-semibold text-blue-100 bg-blue-800 px-3 py-1 rounded-full">
+                {customer.charges.length} invoices
+              </span>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <ChargesTab 
-              customer={customer} 
-              onAddCharge={onAddCharge} 
-              onDeleteCharge={onDeleteCharge} 
-              onAddCreditEntry={onAddCreditEntry} 
-              onUnapplyPayment={onUnapplyPayment} 
-              onApplyPayment={onApplyPayment} 
-            />
+          <div className="overflow-hidden flex-1" style={{ height: '420px' }}>
+            <div className="overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <ChargesTab 
+                customer={customer} 
+                onAddCharge={onAddCharge} 
+                onDeleteCharge={onDeleteCharge} 
+                onAddCreditEntry={onAddCreditEntry} 
+                onUnapplyPayment={onUnapplyPayment} 
+                onApplyPayment={onApplyPayment} 
+              />
+            </div>
           </div>
         </div>
 
         {/* Payments Section */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-green-50 to-green-100 px-5 py-3 border-b border-green-200">
-            <h3 className="text-sm font-bold text-green-900 uppercase tracking-wide">Payments</h3>
-            <p className="text-xs text-green-700 mt-1">{customer.payments.length} payments</p>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 border-b border-green-800">
+            <div className="flex items-baseline justify-between">
+              <h3 className="text-base font-bold text-white uppercase tracking-wide">Payments</h3>
+              <span className="text-sm font-semibold text-green-100 bg-green-800 px-3 py-1 rounded-full">
+                {customer.payments.length} payments
+              </span>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <PaymentsTab 
-              customer={customer} 
-              onAddPayment={onAddPayment} 
-              onDeletePayment={onDeletePayment} 
-              onApplyPayment={onApplyPayment} 
-              onUnapplyPayment={onUnapplyPayment} 
-            />
+          <div className="overflow-hidden flex-1" style={{ height: '420px' }}>
+            <div className="overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <PaymentsTab 
+                customer={customer} 
+                onAddPayment={onAddPayment} 
+                onDeletePayment={onDeletePayment} 
+                onApplyPayment={onApplyPayment} 
+                onUnapplyPayment={onUnapplyPayment} 
+              />
+            </div>
           </div>
         </div>
 
         {/* Credits Section */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-50 to-purple-100 px-5 py-3 border-b border-purple-200">
-            <h3 className="text-sm font-bold text-purple-900 uppercase tracking-wide">Credits</h3>
-            <p className="text-xs text-purple-700 mt-1">{customer.creditEntries.length} credits</p>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 border-b border-purple-800">
+            <div className="flex items-baseline justify-between">
+              <h3 className="text-base font-bold text-white uppercase tracking-wide">Credits</h3>
+              <span className="text-sm font-semibold text-purple-100 bg-purple-800 px-3 py-1 rounded-full">
+                {customer.creditEntries.length} credits
+              </span>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <RefundsTab 
-              customer={customer} 
-              onDeleteCreditEntry={onDeleteCreditEntry} 
-              onAddCreditEntry={onAddCreditEntry} 
-              onApplyPayment={onApplyPayment} 
-              onUnapplyPayment={onUnapplyPayment} 
-            />
+          <div className="overflow-hidden flex-1" style={{ height: '420px' }}>
+            <div className="overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <RefundsTab 
+                customer={customer} 
+                onDeleteCreditEntry={onDeleteCreditEntry} 
+                onAddCreditEntry={onAddCreditEntry} 
+                onApplyPayment={onApplyPayment} 
+                onUnapplyPayment={onUnapplyPayment} 
+              />
+            </div>
           </div>
         </div>
       </div>
